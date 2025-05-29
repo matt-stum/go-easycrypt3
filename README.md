@@ -1,8 +1,8 @@
-# EasyCrypt #
+# EasyCrypt
 
 EasyCrypt is a command-line file encryption tool.
 
-The contents are encrypted with AES256 using an encryption key derived from a user-supplied password using PbKDF2-SHA256-104201
+The contents are encrypted with AES256 using an encryption key derived from a user-supplied password using PBKDF2-SHA256-104201
 
 When encrypting, the plaintext file is overwritten before deletion. When decrypting, the ciphertext file is simply deleted.
 
