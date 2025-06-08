@@ -57,7 +57,9 @@ the original file will be deleted. The reverse happens when decrypting.
 Q: Can I change some of the things about how it works?
 
 A: You can change many of the behavioral defaults by running EasyCrypt3.exe
-in a command-line window and specifying qualifiers on the command line. A full list of qualifiers and default values can be seen by running `EasyCrypt3.exe --help` at a command-line prompt.
+in a command-line window and specifying qualifiers on the command line. A full
+list of qualifiers and default values can be seen by running 
+`EasyCrypt3.exe --help` at a command-line prompt.
 
 ---
 
@@ -77,7 +79,10 @@ A: The original design criteria for this tool were as follows:
 
 Q: What type of security is used?
 
-A: The file contents are encrypted using AES256 and key generation uses PBKDF2-SHA256 with over 100,000 iterations. Password validation uses PBKDF2-SHA512 with over 100,000 iterations. By default, plaintext files are completely overwritten before deletion to prevent "undelete" programs or hex editors from recovering the sensitive data.
+A: The file contents are encrypted using AES256 and key generation uses PBKDF2-SHA256
+with over 100,000 iterations. Password validation uses PBKDF2-SHA512 with over 100,000
+iterations. By default, plaintext files are completely overwritten before deletion to
+prevent "undelete" programs or hex editors from recovering the sensitive data.
 
 ---
 
