@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"unicode"
@@ -129,6 +130,16 @@ func _PKCS7UnPadding(src []byte) ([]byte, error) {
 		}
 	}
 	return src[:(buflen - padlen)], nil
+}
+
+// This prepares a Windows absolute path to be parseable on linux as well.
+// It detects something that looks like a UNC (starts with double-backslash) or
+// drive letter and replaces all following backslashes with slashes.
+func toSlash(path string) string {
+	if matched, _ := regexp.MatchString(`^(?:\\\\|[a-zA-Z]\:).*$`, path); matched {
+		path = path[0:2] + strings.ReplaceAll(path[2:], `\`, `/`)
+	}
+	return path
 }
 
 // Simplified version of io.ReadFull, where error!=nil if n<len(buffer)
@@ -531,7 +542,7 @@ func tryDecrypt(header ecHeader) error {
 	destination := ifElse(
 		*destFile != "",
 		*destFile,
-		filepath.Join(ifElse(*destFolder != "", *destFolder, filepath.Dir(header.Name)), filepath.Base(header.Filename)))
+		filepath.Join(ifElse(*destFolder != "", *destFolder, filepath.Dir(header.Name)), filepath.Base(toSlash(header.Filename))))
 	printAction(fmt.Sprintf("\nDecrypting %s\n        to %s", header.Name, destination))
 	_, err := os.Stat(destination)
 	if err == nil && !*isOverwrite {
