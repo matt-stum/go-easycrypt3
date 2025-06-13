@@ -135,6 +135,7 @@ func _PKCS7UnPadding(src []byte) ([]byte, error) {
 // This prepares a Windows absolute path to be parseable on linux as well.
 // It detects something that looks like a UNC (starts with double-backslash) or
 // drive letter and replaces all following backslashes with slashes.
+// This is required b/c the legacy .NET implementation stores the absolute path.
 func toSlash(path string) string {
 	if matched, _ := regexp.MatchString(`^(?:\\\\|[a-zA-Z]\:).*$`, path); matched {
 		path = path[0:2] + strings.ReplaceAll(path[2:], `\`, `/`)
@@ -342,7 +343,7 @@ func EncryptFile(source, destination string) error {
 	if err != nil {
 		return err
 	}
-	_, err = ofile.Write(append([]byte(source), byte(0)))
+	_, err = ofile.Write(append([]byte(filepath.Base(toSlash(source))), byte(0)))
 	if err != nil {
 		return err
 	}
@@ -702,7 +703,7 @@ func main() {
 
 	rootCmd.Args = cobra.MinimumNArgs(1)
 
-	rootCmd.Version = "3.1"
+	rootCmd.Version = "v1.0.2-alpha"
 	rootCmd.Long = `
 EasyCrypt is a command-line file encryption tool.
 
