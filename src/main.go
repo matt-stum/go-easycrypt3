@@ -363,12 +363,11 @@ func EncryptFile(source, destination string) error {
 		}
 
 		if n < buflen { // EOF
-			buffer = _PKCS7Padding(buffer[:n], blocksize) // TODO: CHANGE TO alg.BlockSize()
+			buffer = _PKCS7Padding(buffer[:n], blocksize)
 			n = len(buffer)
 			eof = true
 		}
 
-		// TODO: ENCRYPT BUFFER
 		encryptor.CryptBlocks(buffer[:n], buffer[:n])
 
 		_, err = ofile.Write(buffer[:n])
@@ -451,7 +450,7 @@ func expandFileList(args []string, recursive bool) ([]string, []string) {
 
 			}
 		} // folder exists
-	} // que loop
+	} // queue loop
 	return result, eresult
 }
 
@@ -497,18 +496,19 @@ func validateDestinationFile() bool {
 			return false
 		}
 		fi, err := os.Stat(dest)
-		if err == nil { // exists
-			if fi.IsDir() {
-				printErr(`Error: Destination file is actually a directory "%v"`, dest)
-				return false
-			}
-			if !*isOverwrite {
-				printErr(`Error: Destination file already exists. Use "--overwrite" if you wish to overwrite existing files. "%v"`, dest)
-				return false
-			}
-			*destFile = dest
+		if err != nil { // doesn't exist (doesn't mean it's valid syntax-wise, but not much can be done there
+			return true
 		}
 
+		if fi.IsDir() {
+			printErr(`Error: Destination file is actually a directory "%v"`, dest)
+			return false
+		}
+		if !*isOverwrite {
+			printErr(`Error: Destination file already exists. Use "--overwrite" if you wish to overwrite existing files. "%v"`, dest)
+			return false
+		}
+		*destFile = dest
 	}
 	return true
 }
