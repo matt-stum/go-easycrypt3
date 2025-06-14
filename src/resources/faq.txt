@@ -1,0 +1,81 @@
+# EasyCrypt3
+
+
+## Questions and Answers
+
+Q: What is it?
+
+A: A simple tool for encrypting and decrypting files using a password.
+
+---
+
+Q: How do I install it?
+
+A: Just copy the EasyCrypt3.exe file to any location you like. The desktop is a
+good place to keep it handy.  You may also want to drop a copy onto your
+thumbdrives and/or external hard drives for when you're away from your local
+computer.
+
+---
+
+Q: How do I use it?
+
+A: The simplest method is to drag one or more files or folders onto the
+EasyCrypt3 icon in Windows. You will be prompted for a password which will be
+used to encrypt or decrypt each of the files. When encrypting a file, a new file
+with the same name will be created with the addition of a .crypt extension and
+the original file will be deleted. The reverse happens when decrypting.
+
+---
+
+Q: Can I change some of the things about how it works?
+
+A: You can change many of the behavioral defaults by running EasyCrypt3.exe
+in a command-line window and specifying qualifiers on the command line. A full
+list of qualifiers and default values can be seen by running 
+`EasyCrypt3.exe --help` at a command-line prompt.
+
+---
+
+Q: What were the design criteria? Why is there no graphical user interface?
+
+A: The original design criteria for this tool were as follows:
+  * Must be usable by batch automation and integration scripts, thus
+    * All configuration input must be available via command-line
+    * All output must be available via STDOUT
+  * Must have a sensible set of defaults to use in Windows drag-n-drop mode
+  * Must allow for encrypted files to be sent via email, thus
+    * There must not be any reliance on hardware or Windows credentials
+  * Use industry-standard crypto algorithms for cross-platform support
+  * Must not require installation
+  
+---
+
+Q: What type of security is used?
+
+A: The file contents are encrypted using AES256 and key generation uses PBKDF2-SHA256
+with over 100,000 iterations. Password validation uses PBKDF2-SHA512 with over 100,000
+iterations. By default, plaintext files are completely overwritten before deletion to
+prevent "undelete" programs or hex editors from recovering the sensitive data.
+
+---
+
+Q: What happens if I forget the password to decrypt a file?
+
+A: You're pretty much out of luck. There are no backdoors or workarounds or
+key recovery. Making any of those features possible would GREATLY reduce the
+security of the encryption.
+
+---
+
+Q: Can I rename the encrypted files?
+
+A: Yes. The original filename is stored in the encrypted file. Additionally,
+EasyCrypt3 does not rely on the file extension to determine whether a file is
+encrypted or not. A common scenario would be to rename the encrypted file with a
+.txt extension to get through email attachment filters.  You can also rename the
+encrypted files to make them less obvious on your computer. For example, you can
+encrypt MyTaxes.pdf and then rename the resulting MyTaxes.pdf.crypt to
+BoringMeeting.ppt. When you decrypt BoringMeeting.ppt it will automatically
+change back to MyTaxes.pdf by default.  
+

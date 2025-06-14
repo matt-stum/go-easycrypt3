@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
+	"embed"
 	"errors"
 	"fmt"
 	"io"
@@ -23,14 +24,12 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
-
-	_ "embed"
 )
 
-const version string = "v1.1.0-alpha"
+const version string = "v1.1.1-alpha"
 
-//go:embed ..\README.md
-var readme string // TODO: CHANGE THIS TO A PROPER DEDICATED FAQ FILE (i.e. no Markdown and no HELP output)
+//go:embed resources/faq.txt
+var resources embed.FS
 
 const cookie string = "EasyCrypt3::"
 const blocksize int = aes.BlockSize // 16
@@ -742,7 +741,8 @@ EasyCrypt is a command-line file encryption tool.
 	}
 
 	if *showFAQ {
-		fmt.Println(readme)
+		faq, _ := resources.ReadFile("resources/faq.txt")
+		fmt.Println(string(faq))
 		return
 	}
 
