@@ -116,7 +116,7 @@ func _pbkdf2_sha512(password string, salt []byte) []byte {
 	return hash
 }
 
-func _PKCS7Padding(plaintext []byte, blockSize int) []byte {
+func _pkcs7Padding(plaintext []byte, blockSize int) []byte {
 	paddingSize := blockSize - (len(plaintext) % blockSize)
 	padding := make([]byte, paddingSize)
 	for i := range padding {
@@ -125,7 +125,7 @@ func _PKCS7Padding(plaintext []byte, blockSize int) []byte {
 	return append(plaintext, padding...)
 }
 
-func _PKCS7UnPadding(src []byte) ([]byte, error) {
+func _pkcs7UnPadding(src []byte) ([]byte, error) {
 	buflen := len(src)
 	padlen := int(src[buflen-1])
 	if padlen > buflen {
@@ -275,7 +275,7 @@ func DecryptStream(ifile io.Reader, pwdhash, iv []byte, ofile io.Writer) error {
 		}
 
 		if nr == 0 && er == io.EOF { // previous plaintext buffer was last, so unpad and mark eof
-			pbuff, eu = _PKCS7UnPadding(pbuff[:np])
+			pbuff, eu = _pkcs7UnPadding(pbuff[:np])
 			if eu != nil {
 				return eu
 			}
@@ -370,7 +370,7 @@ func EncryptFile(source, destination string) error {
 		}
 
 		if n < buflen { // EOF
-			buffer = _PKCS7Padding(buffer[:n], blocksize)
+			buffer = _pkcs7Padding(buffer[:n], blocksize)
 			n = len(buffer)
 			eof = true
 		}
@@ -772,15 +772,12 @@ EasyCrypt is a command-line file encryption tool.
 		return
 	}
 
-	mapYesNo := map[bool]string{false: color.RedString("No"), true: color.GreenString("Yes")}
-	// GREEN VS RED feels too much like GOOD VS BAD when viewed... but Overwrite: Yes is definitely DANGER DANGER.
-	// TODO: Maybe it should reflect deviation from Default? No color is default, Red is altered?
-
-	printVerbose(fmt.Sprintf("What-If:      %s", mapYesNo[*isWhatIf]))
-	printVerbose(fmt.Sprintf("Mode:         '%s'", *eMode))
-	printVerbose(fmt.Sprintf("Delete:       '%s'", *dMode))
-	printVerbose(fmt.Sprintf("Overwrite:    %s", mapYesNo[*isOverwrite]))
-	printVerbose(fmt.Sprintf("Destination:  %s", ifElse(*destFile != "", *destFile, ifElse(*destFolder != "", *destFolder, "<default>"))))
+	printVerbose("")
+	printVerbose(fmt.Sprintf("What-If:      %s", ifElse(*isWhatIf, color.RedString("yes"), "no")))
+	printVerbose(fmt.Sprintf("Mode:         %s", ifElse(*eMode == "toggle", *eMode, color.RedString(*eMode))))
+	printVerbose(fmt.Sprintf("Delete:       %s", ifElse(*dMode == "auto", *dMode, color.RedString(*dMode))))
+	printVerbose(fmt.Sprintf("Overwrite:    %s", ifElse(*isOverwrite, color.RedString("yes"), "no")))
+	printVerbose(fmt.Sprintf("Destination:  %s", ifElse(*destFile != "", color.RedString(*destFile), ifElse(*destFolder != "", color.RedString(*destFolder), "<default>"))))
 
 	if !*isQuiet { // no need to iterate the (potentially large) loop if we know it will be suppressed
 		printNormal("")
