@@ -25,6 +25,8 @@ import (
 	"golang.org/x/term"
 )
 
+const version string = "v1.1.0-alpha"
+
 const cookie string = "EasyCrypt3::"
 const blocksize int = aes.BlockSize // 16
 const buflen int = 4 * 1024         // must be a multiple of blocksize (4k is the most common physical disk block size, so this works well)
@@ -483,12 +485,6 @@ func validateCryptMode() bool {
 }
 
 func validateDestinationFile() bool {
-	if *destFile != "" && len(theList) > 1 {
-		printErr(`Error: invalid usage of "--dest-file" flag: cannot be used when more than one file is being processed`)
-		rootCmd.Usage()
-		return false
-	}
-
 	if *destFile != "" {
 		dest, err := filepath.Abs(*destFile)
 		if err != nil {
@@ -643,8 +639,10 @@ func tryDelete(filename, mode string) error {
 	return nil
 }
 
+// root Cobra command function. I'm only using it to set a flag to indicate
+// that we're good to go... i.e. there wasn't a CLI error and they didn't ask for --help
 func doit(cmd *cobra.Command, args []string) {
-	doingIt = true // this will not trigger if there was a cli error or --help was asked for
+	doingIt = true
 }
 
 // How many programs have a function like this b/c Go refuses to introduce a ternary operator?
@@ -692,18 +690,21 @@ func askForConfirmation() error {
 }
 
 func main() {
+	// if windows and launched by explorer, we want to "press any key to exit" at the end
 	exitFunc = getExitFunc()
 	if exitFunc != nil {
 		defer exitFunc()
 	}
 
 	rootCmd = &cobra.Command{Use: "EasyCrypt3.exe [flags] {file|folder ...}", Run: doit}
+
+	// make flags help-text wrap appropiriate to actual window size
 	w, _, _ := term.GetSize(int(os.Stdout.Fd()))
 	rootCmd.SetUsageTemplate(strings.Replace(rootCmd.UsageTemplate(), ".FlagUsages ", fmt.Sprintf(".FlagUsagesWrapped %d ", ifElse(w > 0, w, 80)), -1))
 
 	rootCmd.Args = cobra.MinimumNArgs(1)
 
-	rootCmd.Version = "v1.0.2-alpha"
+	rootCmd.Version = version
 	rootCmd.Long = `
 EasyCrypt is a command-line file encryption tool.
 
@@ -715,15 +716,15 @@ files or folders separated by spaces. Additional flags can be used to
 alter the behavior. For example, use --whatif to see what *would* happen
 without actually making any changes to the file(s).
 `
-	password = rootCmd.PersistentFlags().String("password", "", "Password used to encrypt or decrypt. You will be prompted if missing.")
+	password = rootCmd.PersistentFlags().String("password", "", "Password used to encrypt or decrypt specified files. You will be prompted if missing.")
 	isWhatIf = rootCmd.PersistentFlags().Bool("whatif", false, "Go through the motions w/o making changes")
 	isQuiet = rootCmd.PersistentFlags().Bool("quiet", false, "Suppress most output")
 	isVerbose = rootCmd.PersistentFlags().Bool("verbose", false, "Include additional output")
 	isConfirm = rootCmd.PersistentFlags().Bool("confirm", true, "Confirm actions before performed")
-	eMode = rootCmd.PersistentFlags().String("mode", "toggle", "{toggle|encrypt|decrypt} If a value other than toggle is specified, files will be skipped if the mode matches the file's existing condition.") // if file is already encrypted, --mode=encrypt will do nothing
+	eMode = rootCmd.PersistentFlags().String("mode", "toggle", "Values: toggle|encrypt|decrypt If a value other than toggle is specified, files will be skipped if the mode matches the file's existing condition.")
 	isOverwrite = rootCmd.PersistentFlags().Bool("overwrite", false, "Overwrite destination file if exists.")
 	isRecursive = rootCmd.PersistentFlags().Bool("recursive", false, "Recursive directory traversal")
-	dMode = rootCmd.PersistentFlags().String("delete", "auto", "Deletion mode (none,auto,secure,fast)")
+	dMode = rootCmd.PersistentFlags().String("delete", "auto", "Values: none|auto|secure|fast Determines what deletion mode to use. The default is auto, which uses secure mode on plaintext files and fast on encrypted files.")
 	destFolder = rootCmd.PersistentFlags().String("dest-folder", "", "Folder to receive processed file(s)")
 	destFile = rootCmd.PersistentFlags().String("dest-file", "", "Override destination file name")
 	rootCmd.MarkFlagsMutuallyExclusive("quiet", "verbose")
@@ -735,18 +736,19 @@ without actually making any changes to the file(s).
 		return
 	}
 
+	// parse the args and see if we're good to go
 	rootCmd.Execute()
 	if !doingIt {
 		return
 	}
+
+	// cobra is happy... now lets do some further validation
 	if !validateDeleteMode() {
 		return
 	}
 	if !validateCryptMode() {
 		return
 	}
-
-	theList, errList = expandFileList(rootCmd.Flags().Args(), *isRecursive)
 
 	if !validateDestinationFile() {
 		return
@@ -756,17 +758,28 @@ without actually making any changes to the file(s).
 		return
 	}
 
+	// take all of the file/folder args and expand them to a list of abs paths to process
+	theList, errList = expandFileList(rootCmd.Flags().Args(), *isRecursive)
+
+	// one final custom validation now that we have theList
+	if *destFile != "" && len(theList) > 1 {
+		printErr(`Error: invalid usage of "--dest-file" flag: cannot be used when more than one file is being processed`)
+		rootCmd.Usage()
+		return
+	}
+
 	mapYesNo := map[bool]string{false: color.RedString("No"), true: color.GreenString("Yes")}
 	// GREEN VS RED feels too much like GOOD VS BAD when viewed... but Overwrite: Yes is definitely DANGER DANGER.
+	// TODO: Maybe it should reflect deviation from Default? No color is default, Red is altered?
 
 	printVerbose(fmt.Sprintf("What-If:      %s", mapYesNo[*isWhatIf]))
 	printVerbose(fmt.Sprintf("Mode:         '%s'", *eMode))
 	printVerbose(fmt.Sprintf("Delete:       '%s'", *dMode))
 	printVerbose(fmt.Sprintf("Overwrite:    %s", mapYesNo[*isOverwrite]))
 	printVerbose(fmt.Sprintf("Destination:  %s", ifElse(*destFile != "", *destFile, ifElse(*destFolder != "", *destFolder, "<default>"))))
-	printVerbose("")
 
-	if !*isQuiet { // no need to iterate the loop if we know it will be suppressed
+	if !*isQuiet { // no need to iterate the (potentially large) loop if we know it will be suppressed
+		printNormal("")
 		for _, fname := range theList {
 			printNormal(fname)
 		}
