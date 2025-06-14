@@ -23,9 +23,14 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
+
+	_ "embed"
 )
 
 const version string = "v1.1.0-alpha"
+
+//go:embed ..\README.md
+var readme string // TODO: CHANGE THIS TO A PROPER DEDICATED FAQ FILE (i.e. no Markdown and no HELP output)
 
 const cookie string = "EasyCrypt3::"
 const blocksize int = aes.BlockSize // 16
@@ -55,7 +60,7 @@ var password *string
 var isWhatIf *bool
 var isQuiet *bool
 var isVerbose *bool
-var isConfirm *bool
+var isNoConfirm *bool
 var userConfirmed rune = 'N' // Y | N | A | Q
 var isRecursive *bool
 var isOverwrite *bool
@@ -63,6 +68,7 @@ var eMode *string
 var dMode *string
 var destFolder *string
 var destFile *string
+var showFAQ *bool
 
 var exitFunc func()
 
@@ -665,13 +671,13 @@ func printVerbose(line string) {
 	}
 }
 func printAction(line string) {
-	if !*isQuiet || *isConfirm {
+	if !*isQuiet || !*isNoConfirm {
 		fmt.Println(line)
 	}
 }
 
 func askForConfirmation() error {
-	if *isConfirm && userConfirmed != 'A' {
+	if !*isNoConfirm && userConfirmed != 'A' {
 		fmt.Print("\nPerform? [Y]es, [N]o, [A]ll, [Q]uit  ")
 		for {
 			ch, _, _ := keyboard.GetSingleKey()
@@ -702,31 +708,24 @@ func main() {
 	w, _, _ := term.GetSize(int(os.Stdout.Fd()))
 	rootCmd.SetUsageTemplate(strings.Replace(rootCmd.UsageTemplate(), ".FlagUsages ", fmt.Sprintf(".FlagUsagesWrapped %d ", ifElse(w > 0, w, 80)), -1))
 
-	rootCmd.Args = cobra.MinimumNArgs(1)
+	rootCmd.Args = cobra.MinimumNArgs(0) // if we require 1 here, it breaks the ability to specify --faq
 
 	rootCmd.Version = version
 	rootCmd.Long = `
 EasyCrypt is a command-line file encryption tool.
-
-One or more files can be drag-n-dropped onto the EasyCrypt3.exe icon
-in Windows Explorer.
-
-It can be run from the command-line where you can specify one or more
-files or folders separated by spaces. Additional flags can be used to
-alter the behavior. For example, use --whatif to see what *would* happen
-without actually making any changes to the file(s).
 `
+	showFAQ = rootCmd.PersistentFlags().Bool("faq", false, "Display the FAQ")
 	password = rootCmd.PersistentFlags().String("password", "", "Password used to encrypt or decrypt specified files. You will be prompted if missing.")
 	isWhatIf = rootCmd.PersistentFlags().Bool("whatif", false, "Go through the motions w/o making changes")
 	isQuiet = rootCmd.PersistentFlags().Bool("quiet", false, "Suppress most output")
 	isVerbose = rootCmd.PersistentFlags().Bool("verbose", false, "Include additional output")
-	isConfirm = rootCmd.PersistentFlags().Bool("confirm", true, "Confirm actions before performed")
-	eMode = rootCmd.PersistentFlags().String("mode", "toggle", "Values: toggle|encrypt|decrypt If a value other than toggle is specified, files will be skipped if the mode matches the file's existing condition.")
+	isNoConfirm = rootCmd.PersistentFlags().Bool("no-confirm", false, "Don't prompt for confirmation before actions are performed")
+	eMode = rootCmd.PersistentFlags().String("mode", "toggle", "[toggle|encrypt|decrypt] If a value other than toggle is specified, files will be skipped if the mode matches the file's existing condition.")
 	isOverwrite = rootCmd.PersistentFlags().Bool("overwrite", false, "Overwrite destination file if exists.")
 	isRecursive = rootCmd.PersistentFlags().Bool("recursive", false, "Recursive directory traversal")
-	dMode = rootCmd.PersistentFlags().String("delete", "auto", "Values: none|auto|secure|fast Determines what deletion mode to use. The default is auto, which uses secure mode on plaintext files and fast on encrypted files.")
-	destFolder = rootCmd.PersistentFlags().String("dest-folder", "", "Folder to receive processed file(s)")
-	destFile = rootCmd.PersistentFlags().String("dest-file", "", "Override destination file name")
+	dMode = rootCmd.PersistentFlags().String("delete", "auto", "[none|auto|secure|fast] Determines what deletion mode to use. The default is auto, which uses secure mode on plaintext files and fast on encrypted files.")
+	destFolder = rootCmd.PersistentFlags().String("dest-folder", "", "Override folder to receive processed file(s) (mutually exclusive with --dest-file)")
+	destFile = rootCmd.PersistentFlags().String("dest-file", "", "Override destination file name (mutually exclusive with --dest-folder)")
 	rootCmd.MarkFlagsMutuallyExclusive("quiet", "verbose")
 	//rootCmd.MarkFlagsMutuallyExclusive("whatif", "confirm")
 	rootCmd.MarkFlagsMutuallyExclusive("dest-folder", "dest-file")
@@ -739,6 +738,11 @@ without actually making any changes to the file(s).
 	// parse the args and see if we're good to go
 	rootCmd.Execute()
 	if !doingIt {
+		return
+	}
+
+	if *showFAQ {
+		fmt.Println(readme)
 		return
 	}
 
