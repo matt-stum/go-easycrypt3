@@ -5,21 +5,22 @@ Usage:
 EasyCrypt3.exe [flags] {file|folder ...}
 
 Flags:
-      --confirm              Confirm actions before performed
-                             (default true)
-      --delete string        Deletion mode (none,auto,secure,fast)
-                             (default "auto")
-      --dest-file string     Override destination file name
-      --dest-folder string   Folder to receive processed file(s)
+      --delete string        [none|auto|secure|fast] Determines what deletion mode to
+                             use. The default is auto, which uses secure mode on
+                             plaintext files and fast on encrypted files. (default "auto")
+      --dest-file string     Override destination file name (mutually exclusive with
+                             --dest-folder)
+      --dest-folder string   Override folder to receive processed file(s) (mutually
+                             exclusive with --dest-file)
+      --faq                  Display the FAQ
   -h, --help                 help for EasyCrypt3.exe
-      --mode string          {toggle|encrypt|decrypt} If a value
-                             other than toggle is specified, files
-                             will be skipped if the mode matches the
-                             file's existing condition. (default
-                             "toggle")
+      --mode string          [toggle|encrypt|decrypt] If a value other than toggle is
+                             specified, files will be skipped if the mode matches the
+                             file's existing condition. (default "toggle")
+      --no-confirm           Don't prompt for confirmation before actions are performed
       --overwrite            Overwrite destination file if exists.
-      --password string      Password used to encrypt or decrypt.
-                             You will be prompted if missing.
+      --password string      Password used to encrypt or decrypt specified files. You
+                             will be prompted if missing.
       --quiet                Suppress most output
       --recursive            Recursive directory traversal
       --verbose              Include additional output
